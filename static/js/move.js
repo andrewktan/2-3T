@@ -1,5 +1,4 @@
-function Move(player, outer, inner) {
-    this.outer = outer;
-    this.inner = inner;
+function Move(player, cell) {
+    this.cell = cell;
     this.player = player;
 };

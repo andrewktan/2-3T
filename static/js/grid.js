@@ -6,3 +6,9 @@ function Grid(parentPos) {
             parentPos);
     }
 };
+
+Grid.prototype.getTerminal = function(outer, inner) {
+    
+    if (this.cells[outer].parentPos == null)
+        return this.cells[outer].contents.cells[inner];
+}
