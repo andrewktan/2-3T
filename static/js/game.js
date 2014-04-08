@@ -1,7 +1,7 @@
 function Game() {
     this.players = [new Player(1), new Player(2)];
     this.depth = 2; // for 2-3T
-    this.grid = new Grid(false);
+    this.grid = new Grid(null);
     this.lastMove = new Move(this.players[0], 1, 1);
 };
 

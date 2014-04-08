@@ -1,8 +1,8 @@
-function Grid(terminal) {
+function Grid(parentPos) {
     this.cells = new Array();
     for (var i=0; i<9; i++) {
         this.cells[i] = new Cell(i, 
-            (terminal)? null : new Grid(true),
-            terminal);
+            (parentPos != null) ? null : new Grid(i), 
+            parentPos);
     }
 };
