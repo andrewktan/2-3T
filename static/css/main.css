@@ -51,9 +51,13 @@ body {
 }
 
 .valid {
-    background-color: rgb(200, 180, 180);
+    background-color: rgb(255, 180, 130);
 }
 
 .valid:hover {
-    background-color: rgb(160, 160, 160);
+    background-color: rgb(200, 200, 100);
+}
+
+.winning-cell {
+    background-color: rgb(200, 255, 200);
 }

@@ -1,9 +1,9 @@
 function Game() {
-    this.players = [new Player(1), new Player(2)];
+    this.players = [new Player(0), new Player(1)];
     this.depth = 2; // for 2-3T
     this.grid = new Grid(null);
     this.lastMove = null;
-    this.turn = 0;
+    this.turn = 1;
     this.isOver = false;
     this.message = $( '#message' );
 };
@@ -40,9 +40,10 @@ Game.prototype.allowMoves = function() {
 
 Game.prototype.makeClickable = function() {
             // update message
-            game.message.html("Player " + (game.turn % 2 + 1) + "'s turn.");
-
+            game.message.html("Player " + (game.turn % 2 + 1) + "'s turn."); // fix
+            game.turn += 1;
             // update last move
+            console.log(game.players[game.turn % 2]);
             game.lastMove = new Move(game.players[game.turn % 2], // change player
             game.grid.getTerminalCell(
             $( this ).parent().parent().attr('pos'), // fix
@@ -65,9 +66,8 @@ Game.prototype.makeClickable = function() {
             }
 
             // end turn
-            game.turn += 1;
             game.freezeBoard();
-            
+
             // new turn
             game.runGame();
 };
@@ -95,7 +95,7 @@ Game.prototype.displayChange = function(gridNum, player) {
 
     // check for game win or draw
     if (this.grid.isWon()) {
-        this.message.html("Player " + player.number + " WINS!");
+        this.message.html("Player " + (player.number + 1) + " WINS!");
         this.isOver = true;
     } else if (this.grid.isFull()) {
         this.message.html("DRAW!");

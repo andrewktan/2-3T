@@ -34,6 +34,7 @@ Grid.prototype.isWon = function() {
     for (validWin in Grid.validWins) {
         v = Grid.validWins[validWin]; // fix
         if (this.cells[v[0]].value != null &&
+            this.cells[v[0]].value != '-' &&
             this.cells[v[0]].value == this.cells[v[1]].value &&
             this.cells[v[1]].value == this.cells[v[2]].value)
             return true;
