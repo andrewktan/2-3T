@@ -7,5 +7,7 @@ function Cell(pos, contents, parentPos) {
 
     if (parentPos != null) {
         this.jobj = $('.cell[pos=' + this.parentPos  + '] > .grid > .cell[pos=' + this.pos + ']'); // fix
+    } else {
+        this.jobj = $('.cell[pos=' + this.pos + '] > .grid > .cell[pos=0]').parent().parent(); // fix
     }
 };
