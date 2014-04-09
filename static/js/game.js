@@ -5,6 +5,7 @@ function Game() {
     this.lastMove = null;
     this.turn = 0;
     this.isOver = false;
+    this.message = $( '#message' );
 };
 
 Game.prototype.runGame = function() {
@@ -38,6 +39,9 @@ Game.prototype.allowMoves = function() {
 };
 
 Game.prototype.makeClickable = function() {
+            // update message
+            game.message.html("Player " + (game.turn % 2 + 1) + "'s turn.");
+
             // update last move
             game.lastMove = new Move(game.players[game.turn % 2], // change player
             game.grid.getTerminalCell(
@@ -91,10 +95,10 @@ Game.prototype.displayChange = function(gridNum, player) {
 
     // check for game win or draw
     if (this.grid.isWon()) {
-        alert("WINNER! Player " + player.number);
+        this.message.html("Player " + player.number + " WINS!");
         this.isOver = true;
     } else if (this.grid.isFull()) {
-        alert("DRAW!");
+        this.message.html("DRAW!");
         this.isOver = true;
     }
 };
