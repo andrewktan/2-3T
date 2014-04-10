@@ -6,6 +6,7 @@ function Game() {
     this.turn = 1;
     this.isOver = false;
     this.message = $( '#message' );
+    this.connection = new Socket();
 };
 
 Game.prototype.runGame = function() {
@@ -43,7 +44,6 @@ Game.prototype.makeClickable = function() {
             game.message.html("Player " + (game.turn % 2 + 1) + "'s turn."); // fix
             game.turn += 1;
             // update last move
-            console.log(game.players[game.turn % 2]);
             game.lastMove = new Move(game.players[game.turn % 2], // change player
             game.grid.getTerminalCell(
             $( this ).parent().parent().attr('pos'), // fix
@@ -70,6 +70,9 @@ Game.prototype.makeClickable = function() {
 
             // new turn
             game.runGame();
+
+            // send move
+            game.connection.sendMove(game.lastMove);
 };
 
 Game.prototype.freezeBoard = function() {

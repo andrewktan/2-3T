@@ -2,9 +2,12 @@ var
 http = require('http'),
 path = require('path'),
 fs = require('fs'),
-swig = require('swig');
+swig = require('swig'),
+socket = require('socket.io');
 
 var tpl = swig.compileFile('/home/andrew/2-3T/templates/index.html');
+
+var connections = 0;
 
 var server = http.createServer(function(req, res) {
     var
@@ -36,5 +39,21 @@ var server = http.createServer(function(req, res) {
         res.end();
 	}
 });
+
+var io = socket.listen(server);
+
+io.on('connection', function(client) {
+    connections++;
+    
+    client.on('disconnect', function(data) {
+    });
+
+    client.on('send-move', function(data) {
+        console.log(data);
+        client.broadcast.emit('push-move', data);
+    });
+
+});
+
 
 server.listen(8080);
