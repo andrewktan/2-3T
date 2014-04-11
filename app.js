@@ -7,8 +7,6 @@ socket = require('socket.io');
 
 var tpl = swig.compileFile('/home/andrew/2-3T/templates/index.html');
 
-var connections = 0;
-
 var server = http.createServer(function(req, res) {
     var
     content = '',
@@ -26,7 +24,7 @@ var server = http.createServer(function(req, res) {
                     res.writeHead(200, {'Content-Type': 'text/css'});
                 else if (path.basename(pathName) == 'js')
                     res.writeHead(200, {'Content-Type': 'text/javascript'});
-                // write contents
+                // write contents 
                 res.end(contents);
             } else {
                 console.dir(err);
@@ -43,8 +41,9 @@ var server = http.createServer(function(req, res) {
 var io = socket.listen(server);
 
 io.on('connection', function(client) {
-    connections++;
-    
+    console.log(io.sockets.clients());
+    client.emit('new-game', {'connections': io.sockets.clients().length });
+        
     client.on('disconnect', function(data) {
     });
 

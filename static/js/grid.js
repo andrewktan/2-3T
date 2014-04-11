@@ -20,7 +20,8 @@ Grid.prototype.getTerminalCell = function(outer, inner) {
 
 };
 
-Grid.validWins = [[0, 1, 2], // hmm...
+Grid.validWins = [
+    [0, 1, 2], // hmm...
     [3, 4, 5],
     [6, 7, 8],
     [0, 3, 6],
@@ -41,6 +42,49 @@ Grid.prototype.isWon = function() {
     }
     return false;
 };
+
+Grid.prototype.displayMove = function(move) {
+    move.cell.value = move.player.symbol;
+    move.cell.jobj.html(move.cell.value);
+    
+    // check for winners
+    gridNum = move.cell.parentPos;
+    if (this.getTerminalGrid(gridNum).isWon()) {
+        this.cells[gridNum].contents = null; // remove
+        this.cells[gridNum].value = move.player.symbol;
+        this.displayChange(gridNum, move.player);
+    } else if (this.getTerminalGrid(gridNum).isFull()) {
+        this.cells[gridNum].contents = null;
+        this.cells[gridNum].value = '-';
+        this.displayChange(gridNum, null);
+    }
+}
+
+Grid.prototype.displayChange = function(gridNum, player) {
+    lastGrid = this.cells[gridNum];
+
+    if (player != null) {
+        lastGrid.jobj.html(player.symbol)
+            .addClass('large-cell');
+    } else {
+        lastGrid.jobj.html("");
+    }
+
+    // check for game win or draw
+    if (this.isWon()) {
+        this.isOver = true;
+        alert("Game over");
+    } else if (this.isFull()) {
+        this.isOver = true;
+        alert("Game Over");
+    }
+};
+
+Grid.prototype.freezeBoard = function() {
+    $('.cell')
+        .removeClass('valid')
+        .unbind('click');
+}
 
 Grid.prototype.isFull = function() {
     for (i=0; i<9; i++)
