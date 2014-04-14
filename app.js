@@ -7,6 +7,8 @@ socket = require('socket.io');
 
 var tpl = swig.compileFile('/home/andrew/2-3T/templates/index.html');
 
+var room;
+
 var server = http.createServer(function(req, res) {
     var
     content = '',
@@ -32,21 +34,29 @@ var server = http.createServer(function(req, res) {
         });
     // serve main page
     } else {
+        room = fileName; // temporary
         res.writeHead(200, {'Content-Type': 'text/html'});
         res.write(tpl());
         res.end();
 	}
 });
 
+
+// sockets
+
 var io = socket.listen(server);
 
-io.on('connection', function(client) {
-    console.log(io.sockets.clients());
-    client.emit('new-game', {'connections': io.sockets.clients().length });
-        
+io.sockets.on('connection', function(client) {
+     
+    client.join(room);
+    client.emit('new-game', {'connections': io.sockets.clients(room).length });
+    
+    // on disconnect 
     client.on('disconnect', function(data) {
     });
+    
 
+    // sending moves
     client.on('send-move', function(data) {
         console.log(data);
         client.broadcast.emit('push-move', data);
