@@ -1,19 +1,18 @@
 function Socket(game) {
     this.socket = io.connect("localhost"); // configure this
-
+    s = this;
     // begin a new game
     this.socket.on('new-game', function (data) {
         connections = data['connections'];
         if (connections < 3) {
             game.player = new Player(connections);
             game.message.html("You are Player " + connections);
-            if (connections == 1)
+            if (connections == 1) 
                 game.runGame();
         } else {
             game.player = new Player(null);
             game.message.html("You are a spectator.");
         }
-
     });
 
     // display opponent's move

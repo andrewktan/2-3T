@@ -84,7 +84,7 @@ Grid.prototype.freezeBoard = function() {
     $('.cell')
         .removeClass('valid')
         .unbind('click');
-}
+};
 
 Grid.prototype.isFull = function() {
     for (i=0; i<9; i++)
