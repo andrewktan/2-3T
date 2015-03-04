@@ -55,17 +55,28 @@ var io = socket.listen(server);
 io.sockets.on('connection', function(client) {
     // function
     function getRoom () { // refactor
-        return Object.keys(io.sockets.manager.roomClients[client.id])[1].substring(1);
+        rooms = io.nsps['/'].adapter.rooms;
+        for (room in rooms) {
+            for (user in rooms[room]) {
+                if (rooms[room][user] == client.id) {
+                    console.log(room);
+                    return room;
+                }
+            }
+        }
     };
     
     // connect to room
     client.join(room);
-    
+
     // initialize game
-    client.emit('new-game', {'connections': io.sockets.clients(room).length });
+    client_list = io.sockets.adapter.rooms[room];
+    client_list_length = Object.keys(client_list).length;
+
+    client.emit('new-game', {'connections': client_list_length });
    
     // initialize room 
-    if (io.sockets.clients(room).length == 1)
+    if (client_list_length == 1)
         ongoing[room] = emptyBoard;
 
     // on pushing grid
