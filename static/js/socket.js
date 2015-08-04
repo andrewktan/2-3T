@@ -1,5 +1,5 @@
 function Socket(game) {
-    this.socket = io.connect("localhost"); // configure this
+    this.socket = io.connect("localhost:8080"); // configure this
     s = this;
     // begin a new game
     this.socket.on('new-game', function (data) {
@@ -22,7 +22,8 @@ function Socket(game) {
             game.grid.getTerminalCell(data['outer'], data['inner']));
         game.lastMove = move;
         game.grid.displayMove(move);
-        game.runGame();
+        game.runGame('isReplay' in data);
+        console.log(move);
     });
 }
 

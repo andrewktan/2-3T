@@ -58,8 +58,7 @@ io.sockets.on('connection', function(client) {
         rooms = io.nsps['/'].adapter.rooms;
         for (room in rooms) {
             for (user in rooms[room]) {
-                if (rooms[room][user] == client.id) {
-                    console.log(room);
+                if (user != room && client.id in rooms[room]) {
                     return room;
                 }
             }
@@ -79,6 +78,29 @@ io.sockets.on('connection', function(client) {
     if (client_list_length == 1)
         ongoing[room] = emptyBoard;
 
+    // update board
+    for(outer = 0; outer < 9; outer++) {
+        for (inner = 0; inner < 9; inner++) {
+            if (!!ongoing[room][outer][inner]) {
+                player = {
+                    'number': (ongoing[room][outer][inner] == 'O') ? 1 : 2, 
+                    'symbol': ongoing[room][outer][inner],
+                    'isTurn': false,
+                    'isSpectator': false,
+                };
+
+                data = {
+                    'player': player, 
+                    'outer': outer,
+                    'inner': inner,
+                    'isReplay': true
+                };
+                console.log(data);
+                client.emit('push-move', data);
+            }
+        }
+    }
+
     // on pushing grid
     client.on('pull-grid', function(data) {
         console.log(data);
@@ -88,10 +110,10 @@ io.sockets.on('connection', function(client) {
     client.on('disconnect', function(data) {
     });
     
-
     // sending moves
     client.on('send-move', function(data) {
-        ongoing[getRoom()][data['outer']][data['inner']] = 'T';
+        console.log(data);
+        ongoing[getRoom()][data['outer']][data['inner']] = data['player']['symbol'];
         console.log(ongoing[getRoom()]);
         client.broadcast.emit('push-move', data);
     });

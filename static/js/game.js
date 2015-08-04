@@ -7,8 +7,8 @@ function Game() {
     this.connection = new Socket(this);
 };
 
-Game.prototype.runGame = function() {
-    if (!this.isOver && !this.player.isSpectator)
+Game.prototype.runGame = function(isReplay) {
+    if (!this.isOver && !this.player.isSpectator && !isReplay)
         this.allowMoves();
 };
 
