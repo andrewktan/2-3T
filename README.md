@@ -13,6 +13,10 @@ socket.io (for WebSockets)
 
     npm install socket.io --save
 
+key-del (used once)
+
+    npm install key-del --save
+
 ## Fun ##
 
 At this point, the server does not validate the moves. Have fun :)

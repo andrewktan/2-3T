@@ -3,7 +3,8 @@ http = require('http'),
 path = require('path'),
 fs = require('fs'),
 swig = require('swig'),
-socket = require('socket.io');
+socket = require('socket.io'),
+deleteKey = require('key-del');
 
 var tpl = swig.compileFile('/home/andrew/2-3T/templates/index.html');
 
@@ -32,8 +33,8 @@ var server = http.createServer(function(req, res) {
                 console.dir(err);
             }
         });
-    // serve main page
-    } else {
+    } else if (fileName == 'favicon.ico') {
+    } else {    // serve main page
         room = fileName; // temporary
         res.writeHead(200, {'Content-Type': 'text/html'});
         res.write(tpl());
@@ -53,38 +54,41 @@ for (i=0; i<9; i++) {
 var io = socket.listen(server);
 
 io.sockets.on('connection', function(client) {
-    // function
-    function getRoom () { // refactor
-        rooms = io.nsps['/'].adapter.rooms;
-        for (room in rooms) {
-            for (user in rooms[room]) {
-                if (user != room && client.id in rooms[room]) {
-                    return room;
-                }
-            }
-        }
-    };
-    
     // connect to room
-    client.join(room);
+    client.room = room;
+    client.join(client.room);
 
     // initialize game
-    client_list = io.sockets.adapter.rooms[room];
+    client_list = io.sockets.adapter.rooms[client.room];
     client_list_length = Object.keys(client_list).length;
-
-    client.emit('new-game', {'connections': client_list_length });
    
     // initialize room 
-    if (client_list_length == 1)
-        ongoing[room] = emptyBoard;
-
+    if (!(room in ongoing)) {
+        console.log('new room ' + client.room);
+        ongoing[room] = {};
+        ongoing[room]['player1'] = client.id;
+        ongoing[room]['player2'] = false;
+        ongoing[room]['nextMove'] = 1;
+        ongoing[room]['board'] = JSON.parse(JSON.stringify(emptyBoard));    // feels dirty
+        client.pn = 1;
+    } else if (!ongoing[client.room]['player1']) {
+        ongoing[room]['player1'] = client.id;
+        client.pn = 1;
+    } else if (!ongoing[client.room]['player2']) {
+        ongoing[room]['player2'] = client.id;
+        client.pn = 2;
+    } else {
+        client.pn = 3;
+    }
+    client.emit('new-game', {'connections': client.pn });
+    
     // update board
     for(outer = 0; outer < 9; outer++) {
         for (inner = 0; inner < 9; inner++) {
-            if (!!ongoing[room][outer][inner]) {
+            if (!!ongoing[client.room]['board'][outer][inner]) {
                 player = {
-                    'number': (ongoing[room][outer][inner] == 'O') ? 1 : 2, 
-                    'symbol': ongoing[room][outer][inner],
+                    'number': (ongoing[client.room]['board'][outer][inner] == 'O') ? 1 : 2, 
+                    'symbol': ongoing[client.room]['board'][outer][inner],
                     'isTurn': false,
                     'isSpectator': false,
                 };
@@ -95,7 +99,6 @@ io.sockets.on('connection', function(client) {
                     'inner': inner,
                     'isReplay': true
                 };
-                console.log(data);
                 client.emit('push-move', data);
             }
         }
@@ -108,14 +111,26 @@ io.sockets.on('connection', function(client) {
     
     // on disconnect 
     client.on('disconnect', function(data) {
+        // log player disconnect
+        console.log('room : ' + client.room + '| disconnected: ' + ongoing[client.room]);
+        if (client.pn == 1) {
+            ongoing[client.room]['player1'] = false;
+        } else if (client.pn == 2) {
+            ongoing[client.room]['player2'] = false;
+        }
+
+        // destroy room if both players disconnect
+        if (!ongoing[client.room]['player1'] && !ongoing[client.room]['player2']) {
+            ongoing = deleteKey(ongoing, [client.room]);
+            console.log('deleted room ' + client.room);
+        }
     });
     
     // sending moves
     client.on('send-move', function(data) {
-        console.log(data);
-        ongoing[getRoom()][data['outer']][data['inner']] = data['player']['symbol'];
-        console.log(ongoing[getRoom()]);
-        client.broadcast.emit('push-move', data);
+        ongoing[client.room]['board'][data['outer']][data['inner']] = data['player']['symbol'];
+        console.log(ongoing[client.room]);
+        client.broadcast.to(client.room).emit('push-move', data);
     });
 
 });
