@@ -3,14 +3,17 @@ function Socket(game) {
     s = this;
     // begin a new game
     this.socket.on('new-game', function (data) {
-        connections = data['connections'];
-        if (connections < 3) {
-            game.player = new Player(connections);
-            game.message.html("You are Player " + connections);
-            if (connections == 1) 
-                game.runGame();
+        game.player = new Player(data['pn']);
+        
+        game.syncBoard(data['board']);  // sync board
+       
+        console.log(data['pn']); 
+        if (data['pn'] < 3) {
+            game.message.html("You are Player " + data['pn']);
+
+            if (data['nextPlayer'] == data['pn'])
+                game.allowMoves(data['board']);
         } else {
-            game.player = new Player(null);
             game.message.html("You are a spectator.");
         }
     });
@@ -20,10 +23,13 @@ function Socket(game) {
         console.log(data);
         move = new Move(data['player'], 
             game.grid.getTerminalCell(data['outer'], data['inner']));
-        game.lastMove = move;
         game.grid.displayMove(move);
-        game.runGame('isReplay' in data);
-        console.log(move);
+        game.allowMoves(data['board']);
+    });
+
+    // game over
+    this.socket.on('game-over', function (data) {
+        alert('game over');
     });
 }
 
