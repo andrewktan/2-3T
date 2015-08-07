@@ -22,6 +22,9 @@ function Socket(game) {
         move = new Move(data['player'], 
             game.grid.getTerminalCell(data['outer'], data['inner']));
         game.grid.displayMove(move);
+
+        console.log(data['nextPlayer']);
+        console.log(game.player.number);
         
         if (data['nextPlayer'] == game.player.number)
             game.allowMoves(data['board']);

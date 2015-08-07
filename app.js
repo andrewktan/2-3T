@@ -6,7 +6,19 @@ swig = require('swig'),
 socket = require('socket.io'),
 deleteKey = require('key-del');
 
+var domain = 'localhost:8080';  // change this
+
 var room, ongoing = {}, emptyBoard = new Array(); // refactor
+
+// function defs
+function randomString(length) {
+    chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    var result = '';
+    for (var i = length; i > 0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
+    return result;
+}
+
+// route
 
 var server = http.createServer(function(req, res) {
     var
@@ -32,10 +44,15 @@ var server = http.createServer(function(req, res) {
             }
        });
     } else if (fileName == 'favicon.ico') {
-    } else if (fileName == '' && pathName == '/'){
+    } else if (fileName == '' && pathName == '/'){  // serve intro page
         res.writeHead(200, {'Content-Type': 'text/html'});
         tpl = swig.compileFile('templates/index.html');
-        res.write(tpl());
+        res.write(tpl({
+            'quickroom': randomString(6), 
+                'rooms': Object.keys(ongoing),
+                'domain': domain
+                }));
+
         res.end();
     } else if (pathName == '/') {    // serve board page
         room = fileName; // temporary
@@ -152,7 +169,7 @@ io.sockets.on('connection', function(client) {
         ongoing[client.room]['board'] = JSON.parse(JSON.stringify(emptyBoard));    // feels dirty
         client.pn = 1;
     
-        console.log('[NEW] player1: ' + ongoing[client.room]['player1'] + ' | player2: ' + ongoing[room]['player2']); //FIXME logging
+        console.log('[NEW] room: ' + client.room + ' | player1: ' + ongoing[client.room]['player1'] + ' | player2: ' + ongoing[room]['player2']); //FIXME logging
     } else if (!ongoing[client.room]['player1']) {
         ongoing[room]['player1'] = client.id;
         client.pn = 1;
@@ -185,7 +202,7 @@ io.sockets.on('connection', function(client) {
 
         // destroy room if nobody left
         if (!ongoing[client.room]['player1'] && !ongoing[client.room]['player2'] && !ongoing[client.room]['spectators']) {
-            console.log('[DEL] player1: ' + ongoing[client.room]['player1'] + ' | player2: ' + ongoing[room]['player2'] + ' | spectators: ' + ongoing[room]['spectators']); //FIXME logging
+            console.log('[DEL] room: ' + client.room + ' | player1: ' + ongoing[client.room]['player1'] + ' | player2: ' + ongoing[client.room]['player2'] + ' | spectators: ' + ongoing[client.room]['spectators']); //FIXME logging
             
             ongoing = deleteKey(ongoing, [client.room]);
         }
@@ -234,6 +251,7 @@ io.sockets.on('connection', function(client) {
         }
 
         // send move
+        data['nextPlayer'] = ongoing[client.room]['nextMove'];
         data['board'] = JSON.parse(JSON.stringify(ongoing[client.room]['board']));
         client.broadcast.to(client.room).emit('push-move', data);
     });
