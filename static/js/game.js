@@ -38,7 +38,6 @@ Game.prototype.syncBoard = function(board) {
 Game.prototype.allowMoves = function(board) {
     if (!this.isOver && !this.player.isSpectator) {
         game = this; // dynamic scope!
-        console.log(board); 
         for (outer = 0; outer < 9; outer++) {
             for (inner = 0; inner < 9; inner++) {
                 if (board[outer][inner] == 'e') {

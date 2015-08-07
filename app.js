@@ -6,8 +6,6 @@ swig = require('swig'),
 socket = require('socket.io'),
 deleteKey = require('key-del');
 
-var tpl = swig.compileFile('/home/andrew/2-3T/templates/index.html');
-
 var room, ongoing = {}, emptyBoard = new Array(); // refactor
 
 var server = http.createServer(function(req, res) {
@@ -16,7 +14,7 @@ var server = http.createServer(function(req, res) {
     fileName = path.basename(req.url),
     pathName = path.dirname(req.url),
     localFolder = __dirname;
-    
+   
     // serve static files 
     if (path.dirname(pathName) == '/static') {
         content = localFolder + req.url;
@@ -34,12 +32,22 @@ var server = http.createServer(function(req, res) {
             }
        });
     } else if (fileName == 'favicon.ico') {
-    } else {    // serve main page
-        room = fileName; // temporary
+    } else if (fileName == '' && pathName == '/'){
         res.writeHead(200, {'Content-Type': 'text/html'});
+        tpl = swig.compileFile('templates/index.html');
         res.write(tpl());
         res.end();
-	}
+    } else if (pathName == '/') {    // serve board page
+        room = fileName; // temporary
+        res.writeHead(200, {'Content-Type': 'text/html'});
+        tpl = swig.compileFile('templates/gameboard.html');
+        res.write(tpl());
+        res.end();
+	} else {
+        res.writeHead(404, {'Content-Type': 'text/html'});
+        res.write(':(');
+        res.end();
+    }
 });
 
 // generate fresh board
@@ -80,12 +88,21 @@ function isWon(board) {
         if (board[v[0]][0] != null &&
             board[v[0]][0] != '-' &&
             board[v[0]][0] != 'e' &&
-            board[v[0]][0] == board[v[1]] &&
-            board[v[1]][0] == board[v[2]])
+            (board[v[0]][0] == 1 || board[v[0]][0] == 2) &&
+            board[v[0]][0] == board[v[1]][0] &&
+            board[v[1]][0] == board[v[2]][0])
             return true;
     }
     return false;
-}       
+}
+
+function isTie(board) {
+    for (outer = 0; outer < 9; outer++)
+        for (inner = 0; inner < 9; inner++)
+            if (board[outer][inner] == null)
+                return false;
+    return true;
+}
 
 function isFull(board, outer) {
     for (inner = 0; inner < 9; inner++)
@@ -127,10 +144,10 @@ io.sockets.on('connection', function(client) {
    
     // initialize room 
     if (!(client.room in ongoing)) {
-        console.log('new room ' + client.room);
         ongoing[client.room] = {};
         ongoing[client.room]['player1'] = client.id;
         ongoing[client.room]['player2'] = false;
+        ongoing[client.room]['spectators'] = 0;
         ongoing[client.room]['nextMove'] = 1;
         ongoing[client.room]['board'] = JSON.parse(JSON.stringify(emptyBoard));    // feels dirty
         client.pn = 1;
@@ -143,9 +160,10 @@ io.sockets.on('connection', function(client) {
         ongoing[room]['player2'] = client.id;
         client.pn = 2;
     } else {
+        ongoing[room]['spectators'] += 1;
         client.pn = 3;
     }
-    client.emit('new-game', {'pn': client.pn ,
+    client.emit('new-connect', {'pn': client.pn ,
         'board': ongoing[client.room]['board'],
         'nextPlayer': ongoing[client.room]['nextMove']
         });
@@ -161,11 +179,13 @@ io.sockets.on('connection', function(client) {
             ongoing[client.room]['player1'] = false;
         } else if (client.pn == 2) {
             ongoing[client.room]['player2'] = false;
+        } else {
+            ongoing[client.room]['spectators'] -= 1;
         }
 
-        // destroy room if both players disconnect
-        if (!ongoing[client.room]['player1'] && !ongoing[client.room]['player2']) {
-            console.log('[DEL] player1: ' + ongoing[client.room]['player1'] + ' | player2: ' + ongoing[room]['player2']); //FIXME logging
+        // destroy room if nobody left
+        if (!ongoing[client.room]['player1'] && !ongoing[client.room]['player2'] && !ongoing[client.room]['spectators']) {
+            console.log('[DEL] player1: ' + ongoing[client.room]['player1'] + ' | player2: ' + ongoing[room]['player2'] + ' | spectators: ' + ongoing[room]['spectators']); //FIXME logging
             
             ongoing = deleteKey(ongoing, [client.room]);
         }
@@ -178,6 +198,11 @@ io.sockets.on('connection', function(client) {
             ongoing[client.room]['board'][data['outer']][data['inner']] != 'e')
             return;
 
+        if (ongoing[client.room]['nextMove'] == 0)
+            return;
+
+        ongoing[client.room]['nextMove'] = (ongoing[client.room]['nextMove'] == 1) ? 2 : 1;
+
         // update board
         ongoing[client.room]['board'][data['outer']][data['inner']] = data['player']['symbol'];
         disableAll(ongoing[client.room]['board']);
@@ -188,15 +213,18 @@ io.sockets.on('connection', function(client) {
                 ongoing[client.room]['board'][data['outer']][inner] = client.pn;
             
             if (isWon(ongoing[client.room]['board'])) {
-                client.broadcast.emit('game-over', {'winner': client.pn});
+                io.in(client.room).emit('game-over', {'winner': client.pn});
                 ongoing[client.room]['nextMove'] = 0;
+                console.log('[WIN] room: ' + client.room + ' | player: ' + client.pn); //FIXME logging
+            } else if (isTie(ongoing[client.room]['board'])) {
+                io.in(client.room).emit('game-over', {'winner': 0});
+                ongoing[client.room]['nextMove'] = 0;
+                console.log('[TIE] room: ' + client.room); //FIXME logging
             }
 
         }
 
         // enable moves
-        ongoing[client.room]['nextMove'] = (ongoing[client.room]['nextMove'] == 1) ? 2 : 1;
-        
         if (ongoing[client.room]['board'][data['inner']][0] == '1' ||
            ongoing[client.room]['board'][data['inner']][0] == '2' ||
            isFull(ongoing[client.room]['board'], data['inner'])) {
@@ -208,7 +236,6 @@ io.sockets.on('connection', function(client) {
         // send move
         data['board'] = JSON.parse(JSON.stringify(ongoing[client.room]['board']));
         client.broadcast.to(client.room).emit('push-move', data);
-        console.log(data['board']);
     });
 
 });

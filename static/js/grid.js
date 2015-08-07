@@ -69,15 +69,6 @@ Grid.prototype.displayChange = function(gridNum, player) {
     } else {
         lastGrid.jobj.html("");
     }
-
-    // check for game win or draw
-    if (this.isWon()) {
-        this.isOver = true;
-        alert("Game over");
-    } else if (this.isFull()) {
-        this.isOver = true;
-        alert("Game Over");
-    }
 };
 
 Grid.prototype.freezeBoard = function() {
