@@ -8,7 +8,7 @@ function Socket(game) {
         game.syncBoard(data['board']);  // sync board
        
         if (data['pn'] < 3) {
-            game.message.html("You are Player " + data['pn']);
+            game.message.html("You are Player " + data['pn'] + ".");
 
             if (data['nextPlayer'] == data['pn'])
                 game.allowMoves(data['board']);
@@ -37,6 +37,16 @@ function Socket(game) {
         } else {
             game.message.html("Player " + data['winner'] + " wins!");
         }
+    });
+
+    // update on other connections
+    this.socket.on('opponent-connect', function (data) {
+        console.log("OPP CONN");
+        game.showPopup("Opponnent connected.");
+    });
+
+    this.socket.on('opponent-disconnect', function (data) {
+        game.showPopup("Opponent disconnected.");
     });
 }
 

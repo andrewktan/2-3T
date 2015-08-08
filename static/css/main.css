@@ -50,6 +50,21 @@ body {
     font-size: 10pt;
 }
 
+#popup {
+    width: 100%;
+    height: 30px;
+
+    background-color: rgb(50, 100, 50);
+    color: rgb(255, 255, 255);
+    
+    font-size: 18pt;
+    text-align: center;
+
+    position: absolute;
+    bottom: 0px;
+    display: none;
+}
+
 #quickstart {
     display: block;
     margin-left: auto;

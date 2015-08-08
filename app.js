@@ -184,6 +184,7 @@ io.sockets.on('connection', function(client) {
         'board': ongoing[client.room]['board'],
         'nextPlayer': ongoing[client.room]['nextMove']
         });
+    client.broadcast.to(client.room).emit('opponent-connect', {});
     
     console.log('[CON] room: ' + client.room + ' | pn: ' + client.pn + ' | id: ' + client.id); //FIXME logging
     
@@ -206,6 +207,7 @@ io.sockets.on('connection', function(client) {
             
             ongoing = deleteKey(ongoing, [client.room]);
         }
+    client.broadcast.to(client.room).emit('opponent-disconnect', {});
     });
     
     // sending moves

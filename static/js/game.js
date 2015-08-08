@@ -3,7 +3,48 @@ function Game() {
     this.grid = new Grid(null);
     this.isOver = false;
     this.message = $( '#message' );
+    this.popup = $( '#popup' );
     this.connection = new Socket(this);
+};
+
+Game.prototype.allowMoves = function(board) {
+    if (!this.isOver && !this.player.isSpectator) {
+        game = this; // dynamic scope!
+        for (outer = 0; outer < 9; outer++) {
+            for (inner = 0; inner < 9; inner++) {
+                if (board[outer][inner] == 'e') {
+                    cell = this.grid.getTerminalCell(outer, inner)
+                    cell.jobj
+                        .addClass('valid')
+                        .bind('click', this.makeClickable);
+                }
+            }
+        }
+    }
+};
+
+Game.prototype.makeClickable = function() {
+    game.lastMove = new Move(game.player,
+            game.grid.getTerminalCell(
+            $( this ).parent().parent().attr('pos'), // fix
+            $( this ).attr('pos')
+    ));
+
+    // display move
+    game.grid.displayMove(game.lastMove);
+
+    // end turn
+    game.grid.freezeBoard();
+
+    // send move
+    game.connection.sendMove(game.lastMove);
+};
+
+Game.prototype.showPopup = function(message) {
+    this.popup.html(message);
+    this.popup.slideDown()
+              .delay(3000)
+              .slideUp();
 };
 
 Game.prototype.syncBoard = function(board) {
@@ -35,35 +76,4 @@ Game.prototype.syncBoard = function(board) {
     }
 }
 
-Game.prototype.allowMoves = function(board) {
-    if (!this.isOver && !this.player.isSpectator) {
-        game = this; // dynamic scope!
-        for (outer = 0; outer < 9; outer++) {
-            for (inner = 0; inner < 9; inner++) {
-                if (board[outer][inner] == 'e') {
-                    cell = this.grid.getTerminalCell(outer, inner)
-                    cell.jobj
-                        .addClass('valid')
-                        .bind('click', this.makeClickable);
-                }
-            }
-        }
-    }
-};
 
-Game.prototype.makeClickable = function() {
-            game.lastMove = new Move(game.player,
-            game.grid.getTerminalCell(
-            $( this ).parent().parent().attr('pos'), // fix
-            $( this ).attr('pos')
-            ));
-
-            // display move
-            game.grid.displayMove(game.lastMove);
-
-            // end turn
-            game.grid.freezeBoard();
-
-            // send move
-            game.connection.sendMove(game.lastMove);
-};
