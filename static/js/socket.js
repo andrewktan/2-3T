@@ -40,13 +40,9 @@ function Socket(game) {
     });
 
     // update on other connections
-    this.socket.on('opponent-connect', function (data) {
-        console.log("OPP CONN");
-        game.showPopup("Opponnent connected.");
-    });
-
-    this.socket.on('opponent-disconnect', function (data) {
-        game.showPopup("Opponent disconnected.");
+    this.socket.on('display-message', function (data) {
+        if (data['to'].indexOf(game.player.number) != -1)
+            game.showPopup(data['message']);
     });
 }
 

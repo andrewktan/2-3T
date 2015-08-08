@@ -180,12 +180,29 @@ io.sockets.on('connection', function(client) {
         ongoing[room]['spectators'] += 1;
         client.pn = 3;
     }
+    // send connection data
     client.emit('new-connect', {'pn': client.pn ,
         'board': ongoing[client.room]['board'],
         'nextPlayer': ongoing[client.room]['nextMove']
         });
-    client.broadcast.to(client.room).emit('opponent-connect', {});
-    
+
+    // display message to opponent
+    if (client.pn < 3) {
+    client.broadcast.to(client.room).emit(
+            'display-message', 
+            {'to': [1, 2], 'message': 'Opponnent connected.'}
+        );
+    client.broadcast.to(client.room).emit(
+            'display-message', 
+            {'to': [3], 'message': 'Player ' + client.pn + ' connected.'}
+        );
+    } else {
+        client.broadcast.to(client.room).emit(
+                'display-message',
+                {'to': [1, 2, 3], 'message': 'Spectator connected.'}
+            );
+    }
+
     console.log('[CON] room: ' + client.room + ' | pn: ' + client.pn + ' | id: ' + client.id); //FIXME logging
     
     // on disconnect 
@@ -207,7 +224,21 @@ io.sockets.on('connection', function(client) {
             
             ongoing = deleteKey(ongoing, [client.room]);
         }
-    client.broadcast.to(client.room).emit('opponent-disconnect', {});
+        if (client.pn < 3) {
+            client.broadcast.to(client.room).emit(
+                    'display-message', 
+                    {'to': [1, 2], 'message': 'Opponnent disconnected.'}
+                );
+            client.broadcast.to(client.room).emit(
+                    'display-message', 
+                    {'to': [3], 'message': 'Player ' + client.pn + ' disconnected.'}
+                );
+        } else {
+             client.broadcast.to(client.room).emit(
+                    'display-message', 
+                    {'to': [1, 2, 3], 'message': 'Spectator disconnected.'}
+                );
+       }
     });
     
     // sending moves
