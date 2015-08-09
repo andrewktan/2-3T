@@ -5,10 +5,11 @@ fs = require('fs'),
 swig = require('swig'),
 socket = require('socket.io'),
 deleteKey = require('key-del');
+gu = require('./gameutils.js');
 
 var domain = 'localhost:8080';  // change this
 
-var room, ongoing = {}, emptyBoard = new Array(); // refactor
+var room, ongoing = {};
 
 // function defs
 function randomString(length) {
@@ -67,86 +68,6 @@ var server = http.createServer(function(req, res) {
     }
 });
 
-// generate fresh board
-for (i=0; i<9; i++) {
-    emptyBoard[i] = new Array();
-    for (j=0; j<9; j++)
-        emptyBoard[i][j] = 'e';
-}
-
-// win check function
-validWins = [
-    [0, 1, 2], // hmm...
-    [3, 4, 5],
-    [6, 7, 8],
-    [0, 3, 6],
-    [1, 4, 7],
-    [2, 5, 8],
-    [0, 4, 8],
-    [2, 4, 6]
-    ];
-
-function isCaptured(board, outer) {
-    for (win in validWins) {
-        v = validWins[win]; // fix
-        if (board[outer][v[0]] != null &&
-            board[outer][v[0]] != '-' &&
-            board[outer][v[0]] != 'e' &&
-            board[outer][v[0]] == board[outer][v[1]] &&
-            board[outer][v[1]] == board[outer][v[2]])
-            return true;
-    }
-    return false;
-}
-
-function isWon(board) {
-    for (win in validWins) {
-        v = validWins[win]; // fix
-        if (board[v[0]][0] != null &&
-            board[v[0]][0] != '-' &&
-            board[v[0]][0] != 'e' &&
-            (board[v[0]][0] == 1 || board[v[0]][0] == 2) &&
-            board[v[0]][0] == board[v[1]][0] &&
-            board[v[1]][0] == board[v[2]][0])
-            return true;
-    }
-    return false;
-}
-
-function isTie(board) {
-    for (outer = 0; outer < 9; outer++)
-        for (inner = 0; inner < 9; inner++)
-            if (board[outer][inner] == null)
-                return false;
-    return true;
-}
-
-function isFull(board, outer) {
-    for (inner = 0; inner < 9; inner++)
-        if (board[outer][inner] == null)
-            return false;
-    return true;
-}
-
-function enableBlock(board, outer) {
-    for (inner = 0; inner < 9; inner++)
-        if (board[outer][inner] == null)
-            board[outer][inner] = 'e';
-}
-
-function disableAll(board) {
-    for (outer = 0; outer < 9; outer++)
-        for (inner = 0; inner < 9; inner++)
-            if (board[outer][inner] == 'e')
-                board[outer][inner] = null;
-}
-
-function enableAll(board) {
-    for (outer = 0; outer < 9; outer++)
-        for (inner = 0; inner < 9; inner++)
-            if (board[outer][inner] == null)
-                board[outer][inner] = 'e';
-}
 // sockets
 var io = socket.listen(server);
 
@@ -166,7 +87,7 @@ io.sockets.on('connection', function(client) {
         ongoing[client.room]['player2'] = false;
         ongoing[client.room]['spectators'] = 0;
         ongoing[client.room]['nextMove'] = 1;
-        ongoing[client.room]['board'] = JSON.parse(JSON.stringify(emptyBoard));    // feels dirty
+        ongoing[client.room]['board'] = JSON.parse(JSON.stringify(gu.emptyBoard));    // feels dirty
         client.pn = 1;
     
         console.log('[NEW] room: ' + client.room + ' | player1: ' + ongoing[client.room]['player1'] + ' | player2: ' + ongoing[room]['player2']); //FIXME logging
@@ -255,18 +176,18 @@ io.sockets.on('connection', function(client) {
 
         // update board
         ongoing[client.room]['board'][data['outer']][data['inner']] = data['player']['symbol'];
-        disableAll(ongoing[client.room]['board']);
+        gu.disableAll(ongoing[client.room]['board']);
          
         // check for captures
-        if (isCaptured(ongoing[client.room]['board'], data['outer'])) {
+        if (gu.isCaptured(ongoing[client.room]['board'], data['outer'])) {
             for (inner = 0; inner < 9; inner++)
                 ongoing[client.room]['board'][data['outer']][inner] = client.pn;
             
-            if (isWon(ongoing[client.room]['board'])) {
+            if (gu.isWon(ongoing[client.room]['board'])) {
                 io.in(client.room).emit('game-over', {'winner': client.pn});
                 ongoing[client.room]['nextMove'] = 0;
                 console.log('[WIN] room: ' + client.room + ' | player: ' + client.pn); //FIXME logging
-            } else if (isTie(ongoing[client.room]['board'])) {
+            } else if (gu.isTie(ongoing[client.room]['board'])) {
                 io.in(client.room).emit('game-over', {'winner': 0});
                 ongoing[client.room]['nextMove'] = 0;
                 console.log('[TIE] room: ' + client.room); //FIXME logging
@@ -277,10 +198,10 @@ io.sockets.on('connection', function(client) {
         // enable moves
         if (ongoing[client.room]['board'][data['inner']][0] == '1' ||
            ongoing[client.room]['board'][data['inner']][0] == '2' ||
-           isFull(ongoing[client.room]['board'], data['inner'])) {
-            enableAll(ongoing[client.room]['board']);
+           gu.isFull(ongoing[client.room]['board'], data['inner'])) {
+            gu.enableAll(ongoing[client.room]['board']);
         } else {
-            enableBlock(ongoing[client.room]['board'], data['inner']);
+            gu.enableBlock(ongoing[client.room]['board'], data['inner']);
         }
 
         // send move
